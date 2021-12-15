@@ -25,9 +25,6 @@ period = c("06:00", "12:00")
 # Filter tables.
 filter_gtfs = function(x, space = NULL, time = NULL) {
   if (is.null(space) && is.null(time)) return(x)
-  # Suppress no-visible binding notes.
-  stop_id = trip_id = route_id = agency_id = service_id = shape_id = NULL
-  from_stop_id = to_stop_id = NULL
   # Filter stops spatially.
   # Only keep stop locations intersecting the spatial extent.
   # Only keep stop times belonging to those locations.
