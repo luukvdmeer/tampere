@@ -43,60 +43,66 @@ filter_gtfs = function(x, space = NULL, time = NULL) {
     x$stop_times = subset(x$stop_times, departure_time >= t0 & departure_time <= t1)
     x$stops = subset(x$stops, stop_id %in% unique(x$stop_times$stop_id))
   }
-  S = unique(x$stops$stop_id)
+  keep_stops = unique(x$stops$stop_id)
   # Filter trips.
   # Only keep trips that contain filtered stops.
-  T = unique(x$stop_times$trip_id)
-  x$trips = subset(x$trips, trip_id %in% T)
+  keep_trips = unique(x$stop_times$trip_id)
+  x$trips = subset(x$trips, trip_id %in% keep_trips)
   # Filter routes.
   # Only keep routes that contain filtered trips.
-  R = unique(x$trips$route_id)
-  x$routes = subset(x$routes, route_id %in% R)
+  keep_routes = unique(x$trips$route_id)
+  x$routes = subset(x$routes, route_id %in% keep_routes)
   # Filter agencies.
   # Only keep agencies that operate filtered routes.
   # Routes don't need to specify agency ids if there is only one agency.
   # In that case just keep all agencies.
   if (! is.null(x$routes$agency_id)) {
-    A = unique(x$routes$agency_id)
-    x$agency = subset(x$agency, agency_id %in% A)
+    keep_agencies = unique(x$routes$agency_id)
+    x$agency = subset(x$agency, agency_id %in% keep_agencies)
   } else {
-    A = x$agency$agency_id
+    keep_agencies = x$agency$agency_id
   }
   # Filter services.
   # Only keep services that serve filtered trips.
-  C = unique(x$trips$service_id)
+  keep_services = unique(x$trips$service_id)
   if (! is.null(x$calendar)) {
-    x$calendar = subset(x$calendar, service_id %in% C)
+    x$calendar = subset(x$calendar, service_id %in% keep_services)
   }
   if (! is.null(x$calendar_dates)) {
-    x$calendar_dates = subset(x$calendar_dates, service_id %in% C)
+    x$calendar_dates = subset(x$calendar_dates, service_id %in% keep_services)
   }
   # Filter frequencies.
   # Only keep frequencies belonging to filtered trips.
   if (! is.null(x$frequencies)) {
-    x$frequencies = subset(x$trips, trip_id %in% T)
+    x$frequencies = subset(x$trips, trip_id %in% keep_trips)
   }
   # Filter shapes.
   # Only keep shapes belonging to filtered trips.
   if (! is.null(x$shapes)) {
-    G = unique(x$trips$shape_id)
-    x$shapes = subset(x$shapes, shape_id %in% G)
+    keep_shapes = unique(x$trips$shape_id)
+    x$shapes = subset(x$shapes, shape_id %in% keep_shapes)
   }
   # Filter transfers.
   # Only keep transfers between filtered stops.
   if (! is.null(x$transfers)) {
-    x$transfers = subset(x$transfers, from_stop_id %in% S & to_stop_id %in% S)
+    x$transfers = subset(
+      x$transfers,
+      from_stop_id %in% keep_stops & to_stop_id %in% keep_stops
+    )
   }
   # Filter pathways.
   # Only keep pathways between filtered stops.
   if (! is.null(x$pathways)) {
-    x$pathways = subset(x$pathways, from_stop_id %in% S & to_stop_id %in% S)
+    x$pathways = subset(
+      x$pathways,
+      from_stop_id %in% keep_stops & to_stop_id %in% keep_stops
+    )
   }
   # Filter levels.
   # Only keep levels that are present in filtered stops.
   if (! is.null(x$levels)) {
-    L = unique(x$stops$level_id)
-    x$levels = subset(x$levels, level_id %in% L)
+    keep_levels = unique(x$stops$level_id)
+    x$levels = subset(x$levels, level_id %in% keep_levels)
   }
   # Filter fares.
   # If fares are linked to routes:
@@ -104,37 +110,35 @@ filter_gtfs = function(x, space = NULL, time = NULL) {
   # If fares are linked to zones:
   # Only keep fares linked to zones that contain filtered stops.
   if (! is.null(x$fare_rules)) {
-    if (! is.null(x$stops$zone_id)) {
-      Z = unique(x$stops$zone_id)
-    } else {
-      Z = c()
-    }
     if (! is.null(x$fare_rules$route_id)) {
-      x$fare_rules = subset(x$fare_rules, route_id %in% R)
+      x$fare_rules = subset(x$fare_rules, route_id %in% keep_routes)
     }
-    if (! is.null(x$fare_rules$origin_id)) {
-      x$fare_rules = subset(x$fare_rules, origin_id %in% Z)
+    if (! is.null(x$stops$zone_id)) {
+      keep_zones = unique(x$stops$zone_id)
+      if (! is.null(x$fare_rules$origin_id)) {
+        x$fare_rules = subset(x$fare_rules, origin_id %in% keep_zones)
+      }
+      if (! is.null(x$fare_rules$destination_id)) {
+        x$fare_rules = subset(x$fare_rules, destination_id %in% keep_zones)
+      }
+      if (! is.null(x$fare_rules$contains_id)) {
+        x$fare_rules = subset(x$fare_rules, contains_id %in% keep_zones)
+      }
     }
-    if (! is.null(x$fare_rules$destination_id)) {
-      x$fare_rules = subset(x$fare_rules, destination_id %in% Z)
-    }
-    if (! is.null(x$fare_rules$contains_id)) {
-      x$fare_rules = subset(x$fare_rules, contains_id %in% Z)
-    }
-    F = unique(x$fare_rules$fare_id)
-    x$fare_attributes = subset(x$fare_attributes, fare_id %in% F)
+    keep_fares = unique(x$fare_rules$fare_id)
+    x$fare_attributes = subset(x$fare_attributes, fare_id %in% keep_fares)
   }
   # Filter attributions.
   # Only keep attributions linked to filtered agencies, routes or trips.
   if (! is.null(x$attributions)) {
     if (! is.null(x$attributions$agency_id)) {
-      x$attributions = subset(x$attributions, agency_id %in% A)
+      x$attributions = subset(x$attributions, agency_id %in% keep_agencies)
     }
     if (! is.null(x$attributions$route_id)) {
-      x$attributions = subset(x$attributions, route_id %in% R)
+      x$attributions = subset(x$attributions, route_id %in% keep_routes)
     }
     if (! is.null(x$attributions$trip_id)) {
-      x$attributions = subset(x$attributions, trip_id %in% T)
+      x$attributions = subset(x$attributions, trip_id %in% keep_trips)
     }
   }
   # Filter translations.
@@ -142,24 +146,24 @@ filter_gtfs = function(x, space = NULL, time = NULL) {
   if (! is.null(x$translations)) {
     old = x$translations
     new = list()
-    new[1] = subset(old, table_name == "agency" & record_id %in% A)
-    new[2] = subset(old, table_name == "stops" & record_id %in% S)
-    new[3] = subset(old, table_name == "routes" & record_id %in% R)
-    new[4] = subset(old, table_name == "trips" & record_id %in% T)
-    new[5] = subset(old, table_name == "stop_times" & record_id %in% T)
+    new[1] = subset(old, table_name == "agency" & record_id %in% keep_agencies)
+    new[2] = subset(old, table_name == "stops" & record_id %in% keep_stops)
+    new[3] = subset(old, table_name == "routes" & record_id %in% keep_routes)
+    new[4] = subset(old, table_name == "trips" & record_id %in% keep_trips)
+    new[5] = subset(old, table_name == "stop_times" & record_id %in% keep_trips)
     if (! is.null(x$pathways)) {
-      I = x$pathways$pathway_id
+      keep_paths = x$pathways$pathway_id
       n = length(new) + 1
-      new[n] = subset(old, table_name == "pathways" & record_id %in% I)
+      new[n] = subset(old, table_name == "pathways" & record_id %in% keep_paths)
     }
     if (! is.null(x$levels)) {
       n = length(new) + 1
-      new[n] = subset(old, table_name == "levels" & record_id %in% L)
+      new[n] = subset(old, table_name == "levels" & record_id %in% keep_levels)
     }
     if (! is.null(x$attributions)) {
-      I = x$attributions$attribution_id
+      keep_attrs = x$attributions$attribution_id
       n = length(new) + 1
-      new[n] = subset(old, table_name == "attributions" & record_id %in% I)
+      new[n] = subset(old, table_name == "attributions" & record_id %in% keep_attrs)
     }
     if (! is.null(x$feed_info)) {
       n = length(new) + 1
